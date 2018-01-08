@@ -11,7 +11,21 @@ public class MainScheduler : MonoBehaviour {
 	public Gradient gradient;
 
 	public UnityEngine.UI.RawImage uiRawImage, uiRawImage1, uiRawImage2;
+	public AudioSource source;
+	public RectTransform progressLine;
 
+	public string GameState = "start";
+
+	//	void Start() {
+	//		StartCoroutine(StartHandler());
+	//	}
+	//
+	//	IEnumerator StartHandler() {
+	//		yield return null;
+	//
+	//
+	//	}
+	public float songLength;
 	void Start() {
 		AudioClip clip;
 //	
@@ -20,14 +34,15 @@ public class MainScheduler : MonoBehaviour {
 		using (var stream = System.IO.File.OpenRead(infile)) {
 			var waveFile = new WaveFile(stream);
 			clip = AudioClip.Create("test", waveFile.Samples.Length, channels = waveFile.Channels, (int)waveFile.SamplePerSec, false);
+			songLength = (float)waveFile.Samples.Length / waveFile.SamplePerSec / waveFile.Channels;
 			data = new float[waveFile.Samples.Length];
 			for (int i = 0; i < data.Length; i++) data[i] = (float)waveFile.Samples[i];
 			clip.SetData(data, 0);
 		}
 	
-		const int length = 1 << 10;
-		const int skip = 1 << 9;
-		const int width = 1 << 7;
+		const int length = 2048;
+		const int skip = 512;
+		const int width = length >> 3;
 		var com = new B83.MathHelpers.Complex[length];
 	
 		var texture = new Texture2D(width, data.Length / channels / skip, TextureFormat.RGB24, false);
@@ -48,16 +63,20 @@ public class MainScheduler : MonoBehaviour {
 			com = B83.MathHelpers.FFT.CalculateFFT(com, false);
 	
 			for (int j = 0; j < width; j++) {
-				texture.SetPixel(width - j - 1, i, gradient.Evaluate(com[j].fMagnitude * 4));
+				texture.SetPixel(width - j - 1, i, gradient.Evaluate(com[j].fMagnitude * 5));
 			}
 		}
 	
 		texture.Apply();
 		uiRawImage.texture = texture;
+		uiRawImage.SetNativeSize();
 	
 		System.IO.File.WriteAllBytes(infile + ".png", texture.EncodeToPNG());
 
-		AudioSource.PlayClipAtPoint(clip, Vector2.zero);
+		source.clip = clip;
+
+		source.Play();
+		startDspTime = AudioSettings.dspTime;
 //	
 //		StartCoroutine(StartHandler());
 
@@ -90,4 +109,11 @@ public class MainScheduler : MonoBehaviour {
 	//		}
 	//		texture2.Apply();
 	//	}
+	double startDspTime;
+	void Update() {
+		double time = AudioSettings.dspTime - startDspTime;
+		float progresss = (float)time / songLength;
+		float height = uiRawImage.rectTransform.rect.height;
+		progressLine.anchoredPosition = new Vector2(0, height * progresss);
+	}
 }
