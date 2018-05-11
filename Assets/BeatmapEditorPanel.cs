@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-public class BeatmapEditorPanel : MonoBehaviour, IScrollHandler {
+public class BeatmapEditorPanel : MonoBehaviour, IScrollHandler, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler {
 	public GameObject BarPrototype, SubPrototype, NotePrototype;
 	public float ScaleSensitivity = 0.2f, ScrollSensitivity = 4;
 
@@ -169,8 +169,6 @@ public class BeatmapEditorPanel : MonoBehaviour, IScrollHandler {
 		return Mathf.RoundToInt((time + startDelay) / duration) * duration - startDelay;
 	}
 
-
-
 #region IScrollHandler implementation
 
 	public void OnScroll(PointerEventData eventData) {
@@ -189,6 +187,49 @@ public class BeatmapEditorPanel : MonoBehaviour, IScrollHandler {
 			}
 //			uiScrollRect.verticalNormalizedPosition += eventData.scrollDelta.y / rectTrans.rect.height * ScrollSensitivity;
 		}
+	}
+
+#endregion
+
+#region IBeginDragHandler implementation
+
+	public void OnBeginDrag(PointerEventData eventData) {
+//		Debug.Log(eventData.position);
+	}
+
+
+#endregion
+
+#region IDragHandler implementation
+
+	public void OnDrag(PointerEventData eventData) {
+//		Debug.Log(eventData.dragging);
+	}
+
+#endregion
+
+#region IEndDragHandler implementation
+
+	public void OnEndDrag(PointerEventData eventData) {
+//		Debug.Log(eventData.position);
+	}
+
+#endregion
+
+#region IPointerClickHandler implementation
+
+	public void OnPointerClick(PointerEventData eventData) {
+		Vector2 localPosition;
+		RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTrans, eventData.position, Camera.main, out localPosition);
+
+		int lane = (int)(localPosition.x / (rectTrans.rect.width / 9));
+		float position = localPosition.y / rectTrans.rect.height * (visibleDuration / songLength) + uiScrollRect.verticalNormalizedPosition;
+		Debug.Log(localPosition.y / rectTrans.rect.height);
+
+		var noteGo = Instantiate(NotePrototype, contentRectTrans);
+		var noteRectTrans = noteGo.GetComponent<RectTransform>();
+		position = Time2ScrollPosition(GetSubdivideSnapedTime(ScrollPosition2Time(position)));
+		noteRectTrans.anchoredPosition = new Vector2(lane * (rectTrans.rect.width / 9), contentRectTrans.rect.height * position);
 	}
 
 #endregion

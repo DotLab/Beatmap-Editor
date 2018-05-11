@@ -47,18 +47,22 @@ public class SpectrumTest : MonoBehaviour {
 		Debug.Log(texture.height);
 		Debug.Log(texture.width);
 	
-		for (int i = 0; i < data.Length / channels / skip; i++) {
-			if (i * skip * channels + length * channels >= data.Length) break;
-
-			for (int j = 0; j < length; j++) {
-				com[j].real = data[i * skip * channels + j * channels];
-				com[j].img = 0;
-			}
-
-			com = FFT.CalculateFFT(com, false);
-
-			for (int j = 0; j < width; j++) {
-				texture.SetPixel(width - j - 1, i, gradient.Evaluate(com[j].fMagnitude * 5));
+		if (System.IO.File.Exists(filePath + ".png")) {
+			texture.LoadImage(System.IO.File.ReadAllBytes(filePath + ".png"));
+		} else {
+			for (int i = 0; i < data.Length / channels / skip; i++) {
+				if (i * skip * channels + length * channels >= data.Length) break;
+				
+				for (int j = 0; j < length; j++) {
+					com[j].real = data[i * skip * channels + j * channels];
+					com[j].img = 0;
+				}
+				
+				com = FFT.CalculateFFT(com, false);
+				
+				for (int j = 0; j < width; j++) {
+					texture.SetPixel(width - j - 1, i, gradient.Evaluate(com[j].fMagnitude * 5));
+				}
 			}
 		}
 
